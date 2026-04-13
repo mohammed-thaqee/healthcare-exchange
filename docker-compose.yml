@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hce-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"        # exposed so you can also hit the API directly
+    env_file:
+      - .env               # your existing .env file is read here
+    volumes:
+      - ./artifacts:/app/artifacts   # mount compiled ABI so you don't rebuild image after deploy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hce-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"            # access the app at http://localhost
+    depends_on:
+      backend:
+        condition: service_healthy
